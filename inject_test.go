@@ -6,6 +6,9 @@ import (
 	"testing"
 )
 
+type SpecialString interface {
+}
+
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
 	if a != b {
@@ -25,12 +28,21 @@ func Test_InjectorInvoke(t *testing.T) {
 
 	dep := "some dependency"
 	injector.Add(dep)
+	dep2 := "another dep"
+	injector.AddAs(dep2, (*SpecialString)(nil))
 
-	var result = ""
-	err := injector.Invoke(func(dependency string) {
-		result = dependency
+	err := injector.Invoke(func(d1 string, d2 SpecialString) {
+		expect(t, d1, dep)
+		expect(t, d2, dep2)
 	})
 
 	expect(t, err, nil)
-	expect(t, result, dep)
+}
+
+func Test_TypeOf(t *testing.T) {
+	iType := inject.TypeOf((*SpecialString)(nil))
+	expect(t, iType.Kind(), reflect.Interface)
+
+	iType = inject.TypeOf((*testing.T)(nil))
+	expect(t, iType.Kind(), reflect.Struct)
 }

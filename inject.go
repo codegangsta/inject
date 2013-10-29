@@ -8,10 +8,20 @@ import (
 type Injector interface {
 	Invoke(interface{}) error
 	Add(interface{})
+	AddAs(interface{}, interface{})
 }
 
 type injector struct {
 	values map[reflect.Type]reflect.Value
+}
+
+func TypeOf(iface interface{}) reflect.Type {
+	t := reflect.TypeOf(iface)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	return t
 }
 
 func New() Injector {
@@ -38,6 +48,10 @@ func (inj *injector) Invoke(f interface{}) error {
 	return nil
 }
 
-func (i *injector) Add(d interface{}) {
-	i.values[reflect.TypeOf(d)] = reflect.ValueOf(d)
+func (i *injector) Add(val interface{}) {
+	i.values[reflect.TypeOf(val)] = reflect.ValueOf(val)
+}
+
+func (i *injector) AddAs(val interface{}, ifacePtr interface{}) {
+	i.values[TypeOf(ifacePtr)] = reflect.ValueOf(val)
 }
