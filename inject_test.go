@@ -31,5 +31,6 @@ func Test_InjectorInvoke(t *testing.T) {
 		result = dependency
 	})
 
+	expect(t, err, nil)
 	expect(t, result, dep)
 }
