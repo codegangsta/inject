@@ -2,6 +2,7 @@ package inject
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -38,7 +39,7 @@ func (inj *injector) Invoke(f interface{}) error {
 		argType := t.In(i)
 		val := inj.values[argType]
 		if !val.IsValid() {
-			return errors.New("TODO have a better error here")
+			return errors.New(fmt.Sprintf("Value not found for type %v", argType))
 		}
 
 		in[i] = val
