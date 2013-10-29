@@ -21,20 +21,20 @@ func New() Injector {
 }
 
 func (inj *injector) Invoke(f interface{}) error {
-  t := reflect.TypeOf(f)
+	t := reflect.TypeOf(f)
 
-  var in = make([]reflect.Value,t.NumIn())
-  for i := 0; i < t.NumIn(); i++ {
-    argType := t.In(i)
-    val := inj.values[argType]
-    if !val.IsValid() {
-      return errors.New("TODO have a better error here")
-    }
+	var in = make([]reflect.Value, t.NumIn())
+	for i := 0; i < t.NumIn(); i++ {
+		argType := t.In(i)
+		val := inj.values[argType]
+		if !val.IsValid() {
+			return errors.New("TODO have a better error here")
+		}
 
-    in[i] = val
-  }
+		in[i] = val
+	}
 
-  reflect.ValueOf(f).Call(in)
+	reflect.ValueOf(f).Call(in)
 	return nil
 }
 
