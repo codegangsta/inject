@@ -9,9 +9,9 @@ type injector struct {
 }
 
 func New() Injector {
-  return &injector{}
+	return &injector{}
 }
 
 func (i *injector) Invoke(f interface{}) error {
-  return nil
+	return nil
 }

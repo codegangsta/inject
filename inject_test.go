@@ -2,8 +2,8 @@ package inject_test
 
 import (
 	"github.com/codegangsta/inject"
-  "testing"
 	"reflect"
+	"testing"
 )
 
 /* Test Helpers */
@@ -20,16 +20,16 @@ func refute(t *testing.T, a interface{}, b interface{}) {
 }
 
 func Test_InjectorInvoke(t *testing.T) {
-  injector := inject.New()
-  expect(t, injector == nil, false)
+	injector := inject.New()
+	expect(t, injector == nil, false)
 
-  dep := "some dependency"
-  injector.Add(dep)
+	dep := "some dependency"
+	injector.Add(dep)
 
-  var result = ""
-  err := injector.Invoke(func(dependency string) {
-    result = dependency
-  })
+	var result = ""
+	err := injector.Invoke(func(dependency string) {
+		result = dependency
+	})
 
-  expect(t, result, dep)
+	expect(t, result, dep)
 }
