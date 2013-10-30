@@ -9,6 +9,12 @@ import (
 type SpecialString interface {
 }
 
+type TestStruct struct {
+	Dep1 string        `inject`
+	Dep2 SpecialString `inject`
+	Dep3 string
+}
+
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
 	if a != b {
@@ -37,6 +43,20 @@ func Test_InjectorInvoke(t *testing.T) {
 	})
 
 	expect(t, err, nil)
+}
+
+func Test_InjectorApply(t *testing.T) {
+	injector := inject.New()
+
+	injector.Map("a dep")
+	injector.MapTo("another dep", (*SpecialString)(nil))
+
+	s := TestStruct{}
+	err := injector.Apply(&s)
+	expect(t, err, nil)
+
+	expect(t, s.Dep1, "a dep")
+	expect(t, s.Dep2, "another dep")
 }
 
 func Test_TypeOf(t *testing.T) {

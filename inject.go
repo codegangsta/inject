@@ -8,6 +8,7 @@ import (
 
 type Injector interface {
 	Invoke(interface{}) error
+	Apply(interface{}) error
 	Map(interface{})
 	MapTo(interface{}, interface{})
 	Get(reflect.Type) reflect.Value
@@ -40,7 +41,7 @@ func (inj *injector) Invoke(f interface{}) error {
 	var in = make([]reflect.Value, t.NumIn())
 	for i := 0; i < t.NumIn(); i++ {
 		argType := t.In(i)
-		val := inj.values[argType]
+		val := inj.Get(argType)
 		if !val.IsValid() {
 			return errors.New(fmt.Sprintf("Value not found for type %v", argType))
 		}
@@ -49,6 +50,36 @@ func (inj *injector) Invoke(f interface{}) error {
 	}
 
 	reflect.ValueOf(f).Call(in)
+	return nil
+}
+
+func (inj *injector) Apply(val interface{}) error {
+	v := reflect.ValueOf(val)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return nil
+	}
+
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		structField := t.Field(i)
+		if f.CanSet() && structField.Tag == "inject" {
+			ft := f.Type()
+			v := inj.Get(ft)
+			if !v.IsValid() {
+				return errors.New(fmt.Sprintf("Value not found for type %v", ft))
+			}
+
+			f.Set(v)
+		}
+
+	}
+
 	return nil
 }
 
