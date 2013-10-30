@@ -27,9 +27,9 @@ func Test_InjectorInvoke(t *testing.T) {
 	expect(t, injector == nil, false)
 
 	dep := "some dependency"
-	injector.Add(dep)
+	injector.Map(dep)
 	dep2 := "another dep"
-	injector.AddAs(dep2, (*SpecialString)(nil))
+	injector.MapTo(dep2, (*SpecialString)(nil))
 
 	err := injector.Invoke(func(d1 string, d2 SpecialString) {
 		expect(t, d1, dep)
@@ -45,4 +45,23 @@ func Test_TypeOf(t *testing.T) {
 
 	iType = inject.TypeOf((*testing.T)(nil))
 	expect(t, iType.Kind(), reflect.Struct)
+}
+
+func Test_InjectorGet(t *testing.T) {
+	injector := inject.New()
+
+	injector.Map("some dependency")
+
+	expect(t, injector.Get(reflect.TypeOf("string")).IsValid(), true)
+	expect(t, injector.Get(reflect.TypeOf(11)).IsValid(), false)
+}
+
+func Test_InjectorSetParent(t *testing.T) {
+	injector := inject.New()
+	injector.MapTo("another dep", (*SpecialString)(nil))
+
+	injector2 := inject.New()
+	injector2.SetParent(injector)
+
+	expect(t, injector2.Get(inject.TypeOf((*SpecialString)(nil))).IsValid(), true)
 }

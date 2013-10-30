@@ -8,12 +8,15 @@ import (
 
 type Injector interface {
 	Invoke(interface{}) error
-	Add(interface{})
-	AddAs(interface{}, interface{})
+	Map(interface{})
+	MapTo(interface{}, interface{})
+	Get(reflect.Type) reflect.Value
+	SetParent(Injector)
 }
 
 type injector struct {
 	values map[reflect.Type]reflect.Value
+	parent Injector
 }
 
 func TypeOf(iface interface{}) reflect.Type {
@@ -49,10 +52,22 @@ func (inj *injector) Invoke(f interface{}) error {
 	return nil
 }
 
-func (i *injector) Add(val interface{}) {
+func (i *injector) Map(val interface{}) {
 	i.values[reflect.TypeOf(val)] = reflect.ValueOf(val)
 }
 
-func (i *injector) AddAs(val interface{}, ifacePtr interface{}) {
+func (i *injector) MapTo(val interface{}, ifacePtr interface{}) {
 	i.values[TypeOf(ifacePtr)] = reflect.ValueOf(val)
+}
+
+func (i *injector) Get(t reflect.Type) reflect.Value {
+	val := i.values[t]
+	if !val.IsValid() && i.parent != nil {
+		val = i.parent.Get(t)
+	}
+	return val
+}
+
+func (i *injector) SetParent(parent Injector) {
+	i.parent = parent
 }
