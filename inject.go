@@ -7,12 +7,24 @@ import (
 )
 
 type Injector interface {
-	Invoke(interface{}) error
+	Applicator
+	Invoker
+	TypeMapper
+	SetParent(Injector)
+}
+
+type Applicator interface {
 	Apply(interface{}) error
+}
+
+type Invoker interface {
+	Invoke(interface{}) error
+}
+
+type TypeMapper interface {
 	Map(interface{})
 	MapTo(interface{}, interface{})
 	Get(reflect.Type) reflect.Value
-	SetParent(Injector)
 }
 
 type injector struct {
