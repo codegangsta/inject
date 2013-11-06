@@ -59,12 +59,16 @@ func Test_InjectorApply(t *testing.T) {
 	expect(t, s.Dep2, "another dep")
 }
 
-func Test_TypeOf(t *testing.T) {
-	iType := inject.TypeOf((*SpecialString)(nil))
+func Test_InterfaceOf(t *testing.T) {
+	iType := inject.InterfaceOf((*SpecialString)(nil))
 	expect(t, iType.Kind(), reflect.Interface)
 
-	iType = inject.TypeOf((*testing.T)(nil))
-	expect(t, iType.Kind(), reflect.Struct)
+	// Expecting nil
+	defer func() {
+		rec := recover()
+		refute(t, rec, nil)
+	}()
+	iType = inject.InterfaceOf((*testing.T)(nil))
 }
 
 func Test_InjectorGet(t *testing.T) {
@@ -83,5 +87,5 @@ func Test_InjectorSetParent(t *testing.T) {
 	injector2 := inject.New()
 	injector2.SetParent(injector)
 
-	expect(t, injector2.Get(inject.TypeOf((*SpecialString)(nil))).IsValid(), true)
+	expect(t, injector2.Get(inject.InterfaceOf((*SpecialString)(nil))).IsValid(), true)
 }

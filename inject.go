@@ -32,13 +32,18 @@ type injector struct {
 	parent Injector
 }
 
-func TypeOf(iface interface{}) reflect.Type {
-	t := reflect.TypeOf(iface)
+func InterfaceOf(value interface{}) reflect.Type {
+	t := reflect.TypeOf(value)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
+
+		if t.Kind() == reflect.Interface {
+			return t
+		}
 	}
 
-	return t
+	panic("Called inject.InterfaceOf with a value that is not a pointer to an interface. (*MyInterface)(nil)")
+	return nil
 }
 
 func New() Injector {
@@ -100,7 +105,7 @@ func (i *injector) Map(val interface{}) {
 }
 
 func (i *injector) MapTo(val interface{}, ifacePtr interface{}) {
-	i.values[TypeOf(ifacePtr)] = reflect.ValueOf(val)
+	i.values[InterfaceOf(ifacePtr)] = reflect.ValueOf(val)
 }
 
 func (i *injector) Get(t reflect.Type) reflect.Value {
