@@ -37,11 +37,30 @@ func Test_InjectorInvoke(t *testing.T) {
 	dep2 := "another dep"
 	injector.MapTo(dep2, (*SpecialString)(nil))
 
-	err := injector.Invoke(func(d1 string, d2 SpecialString) {
+	_, err := injector.Invoke(func(d1 string, d2 SpecialString) {
 		expect(t, d1, dep)
 		expect(t, d2, dep2)
 	})
 
+	expect(t, err, nil)
+}
+
+func Test_InjectorInvokeReturnValues(t *testing.T) {
+	injector := inject.New()
+	expect(t, injector == nil, false)
+
+	dep := "some dependency"
+	injector.Map(dep)
+	dep2 := "another dep"
+	injector.MapTo(dep2, (*SpecialString)(nil))
+
+	result, err := injector.Invoke(func(d1 string, d2 SpecialString) string {
+		expect(t, d1, dep)
+		expect(t, d2, dep2)
+		return "Hello world"
+	})
+
+	expect(t, result[0].String(), "Hello world")
 	expect(t, err, nil)
 }
 

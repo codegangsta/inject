@@ -18,7 +18,7 @@ type Applicator interface {
 }
 
 type Invoker interface {
-	Invoke(interface{}) error
+	Invoke(interface{}) ([]reflect.Value, error)
 }
 
 type TypeMapper interface {
@@ -52,7 +52,7 @@ func New() Injector {
 	}
 }
 
-func (inj *injector) Invoke(f interface{}) error {
+func (inj *injector) Invoke(f interface{}) ([]reflect.Value, error) {
 	t := reflect.TypeOf(f)
 
 	var in = make([]reflect.Value, t.NumIn())
@@ -60,14 +60,13 @@ func (inj *injector) Invoke(f interface{}) error {
 		argType := t.In(i)
 		val := inj.Get(argType)
 		if !val.IsValid() {
-			return errors.New(fmt.Sprintf("Value not found for type %v", argType))
+			return nil, errors.New(fmt.Sprintf("Value not found for type %v", argType))
 		}
 
 		in[i] = val
 	}
 
-	reflect.ValueOf(f).Call(in)
-	return nil
+	return reflect.ValueOf(f).Call(in), nil
 }
 
 func (inj *injector) Apply(val interface{}) error {
