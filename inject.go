@@ -22,8 +22,8 @@ type Invoker interface {
 }
 
 type TypeMapper interface {
-	Map(interface{})
-	MapTo(interface{}, interface{})
+	Map(interface{}) Injector
+	MapTo(interface{}, interface{}) Injector
 	Get(reflect.Type) reflect.Value
 }
 
@@ -34,16 +34,16 @@ type injector struct {
 
 func InterfaceOf(value interface{}) reflect.Type {
 	t := reflect.TypeOf(value)
-	if t.Kind() == reflect.Ptr {
+	
+	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
-
-		if t.Kind() == reflect.Interface {
-			return t
-		}
+	}
+	
+	if t.Kind() != reflect.Interface {
+		panic("Called inject.InterfaceOf with a value that is not a pointer to an interface. (*MyInterface)(nil)")
 	}
 
-	panic("Called inject.InterfaceOf with a value that is not a pointer to an interface. (*MyInterface)(nil)")
-	return nil
+	return t
 }
 
 func New() Injector {
@@ -71,7 +71,8 @@ func (inj *injector) Invoke(f interface{}) ([]reflect.Value, error) {
 
 func (inj *injector) Apply(val interface{}) error {
 	v := reflect.ValueOf(val)
-	if v.Kind() == reflect.Ptr {
+	
+	for v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
 
@@ -99,12 +100,14 @@ func (inj *injector) Apply(val interface{}) error {
 	return nil
 }
 
-func (i *injector) Map(val interface{}) {
+func (i *injector) Map(val interface{}) Injector {
 	i.values[reflect.TypeOf(val)] = reflect.ValueOf(val)
+	return i
 }
 
-func (i *injector) MapTo(val interface{}, ifacePtr interface{}) {
+func (i *injector) MapTo(val interface{}, ifacePtr interface{}) Injector {
 	i.values[InterfaceOf(ifacePtr)] = reflect.ValueOf(val)
+	return i
 }
 
 func (i *injector) Get(t reflect.Type) reflect.Value {
