@@ -21,8 +21,8 @@ type Invoker interface {
 }
 
 type TypeMapper interface {
-	Map(interface{}) Injector
-	MapTo(interface{}, interface{}) Injector
+	Map(interface{}) TypeMapper
+	MapTo(interface{}, interface{}) TypeMapper
 	Get(reflect.Type) reflect.Value
 }
 
