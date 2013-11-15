@@ -100,12 +100,12 @@ func (inj *injector) Apply(val interface{}) error {
 	return nil
 }
 
-func (i *injector) Map(val interface{}) Injector {
+func (i *injector) Map(val interface{}) TypeMapper {
 	i.values[reflect.TypeOf(val)] = reflect.ValueOf(val)
 	return i
 }
 
-func (i *injector) MapTo(val interface{}, ifacePtr interface{}) Injector {
+func (i *injector) MapTo(val interface{}, ifacePtr interface{}) TypeMapper {
 	i.values[InterfaceOf(ifacePtr)] = reflect.ValueOf(val)
 	return i
 }
