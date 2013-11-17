@@ -1,7 +1,6 @@
 package inject
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -60,7 +59,7 @@ func (inj *injector) Invoke(f interface{}) ([]reflect.Value, error) {
 		argType := t.In(i)
 		val := inj.Get(argType)
 		if !val.IsValid() {
-			return nil, errors.New(fmt.Sprintf("Value not found for type %v", argType))
+			return nil, fmt.Errorf("Value not found for type %v", argType)
 		}
 
 		in[i] = val
@@ -88,7 +87,7 @@ func (inj *injector) Apply(val interface{}) error {
 			ft := f.Type()
 			v := inj.Get(ft)
 			if !v.IsValid() {
-				return errors.New(fmt.Sprintf("Value not found for type %v", ft))
+				return fmt.Errorf("Value not found for type %v", ft)
 			}
 
 			f.Set(v)
