@@ -82,6 +82,9 @@ func Test_InterfaceOf(t *testing.T) {
 	iType := inject.InterfaceOf((*SpecialString)(nil))
 	expect(t, iType.Kind(), reflect.Interface)
 
+	iType = inject.InterfaceOf((**SpecialString)(nil))
+	expect(t, iType.Kind(), reflect.Interface)
+
 	// Expecting nil
 	defer func() {
 		rec := recover()
