@@ -67,8 +67,7 @@ func Test_InjectorInvokeReturnValues(t *testing.T) {
 func Test_InjectorApply(t *testing.T) {
 	injector := inject.New()
 
-	injector.Map("a dep")
-	injector.MapTo("another dep", (*SpecialString)(nil))
+	injector.Map("a dep").MapTo("another dep", (*SpecialString)(nil))
 
 	s := TestStruct{}
 	err := injector.Apply(&s)
