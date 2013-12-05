@@ -3,11 +3,11 @@ box: wercker-labs/windows@0.0.3
 build:
   steps:
     - script:
-        name: Say Hello world
-        code: where go
-    - script:
         name: Setup Go path
         code: |
+          # Add Go
+          export PATH="$PATH:/usr/local/go/bin"
+          which go
           # Set GOPATH
           export GOPATH="$HOME/go"
           
