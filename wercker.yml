@@ -3,9 +3,11 @@ box: wercker-labs/windows@0.0.3
 build:
   steps:
     - script:
-        name: Say Hello world
-        code: echo "Hello world"
-    - script: |
+      name: Say Hello world
+      code: echo "Hello world"
+    - script:
+      name: "Setup Go path"
+      code: |
         # Set GOPATH
         export GOPATH="$HOME/go"
         echo 'export GOPATH="$HOME/go"' | sudo tee -a /etc/profile
