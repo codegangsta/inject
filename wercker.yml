@@ -1,35 +1,7 @@
 box: wercker-labs/windows@0.0.3
 
 build:
-  go:
-    priority : 50
-    detect:
-      - default: true
-    text-to-append: |
-      # Build definition
-      build:
-        # The steps that will be executed on build
-        steps:
-          # Sets the go workspace and places you package
-          # at the right place in the workspace tree
-          - setup-go-workspace
-
-          # Gets the dependencies
-          - script:
-              name: go get
-              code: |
-                cd $WERCKER_SOURCE_DIR
-                go version
-                go get ./...
-
-          # Build the project
-          - script:
-              name: go build
-              code: |
-                go build ./...
-
-          # Test the project
-          - script:
-              name: go test
-              code: |
-                go test ./...
+  steps:
+    - script:
+        name: Say Hello world
+        code: echo "Hello world"
