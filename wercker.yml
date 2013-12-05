@@ -5,10 +5,35 @@ build:
     - script:
         name: Say Hello world
         code: echo "Hello world"
-    - wercker/setup-go-workspace@1.0.2
+    - script: |
+        # Set GOPATH
+        export GOPATH="$HOME/go"
+        echo 'export GOPATH="$HOME/go"' | sudo tee -a /etc/profile
+
+        # Adds go bin directory to path so tools
+        # and buils are available on the commandline
+        export PATH="$PATH:$GOPATH/bin"
+        echo 'export PATH="$PATH:$GOPATH/bin"' | sudo tee -a /etc/profile
+
+        # Make actual go workspace dir structure
+        mkdir -p "$HOME/go/{src,pkg,bin}"
     - script:
-        name: Go Get
-        code: go get ./...
+      name: setup golang
+      code: |-
+        if test "${WERCKER_GIT_REPOSITORY+set}" == set; then mkdir -p "$GOPATH/src/$WERCKER_GIT_DOMAIN/$WERCKER_GIT_OWNER/$WERCKER_GIT_REPOSITORY"; else ln -s $WERCKER_SOURCE_DIR $GOPATH/src; fi
+        if test "${WERCKER_GIT_REPOSITORY+set}" == set; then cp -R $WERCKER_SOURCE_DIR/* "$GOPATH/src/$WERCKER_GIT_DOMAIN/$WERCKER_GIT_OWNER/$WERCKER_GIT_REPOSITORY"; fi
+        if test "${WERCKER_GIT_REPOSITORY+set}" == set; then export WERCKER_SOURCE_DIR="$GOPATH/src/$WERCKER_GIT_DOMAIN/$WERCKER_GIT_OWNER/$WERCKER_GIT_REPOSITORY"; fi
     - script:
-        name: Go Test
-        code: go test ./...
+      name: go get
+      code: |
+        cd $WERCKER_SOURCE_DIR
+        go version
+        go get ./...
+    - script:
+      name: go build
+      code: |
+        go build
+    - script:
+      name: go test
+      code: |
+        go test ./...
