@@ -5,3 +5,9 @@ build:
     - script:
         name: Say Hello world
         code: echo "Hello world"
+    - script:
+        name: Go Get
+        code: go get ./...
+    - script:
+        name: Go Test
+        code: go test ./...
