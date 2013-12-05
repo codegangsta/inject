@@ -5,6 +5,7 @@ build:
     - script:
         name: Say Hello world
         code: echo "Hello world"
+    - wercker/setup-go-workspace@1.0.2
     - script:
         name: Go Get
         code: go get ./...
