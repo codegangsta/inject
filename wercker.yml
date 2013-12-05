@@ -4,7 +4,7 @@ build:
   steps:
     - script:
         name: Say Hello world
-        code: echo "Hello world"
+        code: where go
     - script:
         name: Setup Go path
         code: |
