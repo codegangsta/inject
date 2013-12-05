@@ -1,8 +1,7 @@
 box: wercker-labs/windows@0.0.3
 
 build:
-  steps:
-    go:
+  go:
     priority : 50
     detect:
       - default: true
