@@ -6,7 +6,7 @@ build:
       name: Say Hello world
       code: echo "Hello world"
     - script:
-      name: "Setup Go path"
+      name: Setup Go path
       code: |
         # Set GOPATH
         export GOPATH="$HOME/go"
