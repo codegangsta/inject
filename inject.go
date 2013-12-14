@@ -5,17 +5,27 @@ import (
 	"reflect"
 )
 
+// Injector represents an interface for mapping and injecting dependencies into structs
+// function arguments.
 type Injector interface {
 	Applicator
 	Invoker
 	TypeMapper
+	// SetParent sets the parent of the injector. If the injector cannot find a
+	// dependency in its Type map it will check it's parent before returning an
+	// error.
 	SetParent(Injector)
 }
 
+// Applicator represents an interface for mapping dependencies to a struct.
 type Applicator interface {
+	// Maps dependencies in the Type map to each field in the struct
+	// that is tagged with 'inject'. Returns an error of the injection
+	// fails.
 	Apply(interface{}) error
 }
 
+// Invoker represents an interface for calling functions via reflection.
 type Invoker interface {
 	Invoke(interface{}) ([]reflect.Value, error)
 }
