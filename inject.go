@@ -20,19 +20,30 @@ type Injector interface {
 // Applicator represents an interface for mapping dependencies to a struct.
 type Applicator interface {
 	// Maps dependencies in the Type map to each field in the struct
-	// that is tagged with 'inject'. Returns an error of the injection
+	// that is tagged with 'inject'. Returns an error if the injection
 	// fails.
 	Apply(interface{}) error
 }
 
 // Invoker represents an interface for calling functions via reflection.
 type Invoker interface {
+	// Invoke attempts to call the interface{} provided as a function,
+	// providing dependencies for function arguments based on Type. Returns
+	// a slice of reflect.Value representing the returned values of the function.
+	// Returns an error if the injection fails.
 	Invoke(interface{}) ([]reflect.Value, error)
 }
 
+// TypeMapper represents an interface for mapping interface{} values based on type.
 type TypeMapper interface {
+	// Maps the interface{} value based on it's immediate type from reflect.TypeOf.
 	Map(interface{}) TypeMapper
+	// Maps the interface{} value based on the pointer of an Interface provided.
+	// This is really only useful for mapping a value as an interface, as interfaces
+	// cannot at this time be referenced directly without a pointer.
 	MapTo(interface{}, interface{}) TypeMapper
+	// Returns the Value that is mapped to the current type. Returns a zeroed Value if
+	// the Type has not been mapped.
 	Get(reflect.Type) reflect.Value
 }
 
@@ -41,6 +52,7 @@ type injector struct {
 	parent Injector
 }
 
+// InterfaceOf dereferences a pointer to an Interface type.
 func InterfaceOf(value interface{}) reflect.Type {
 	t := reflect.TypeOf(value)
 
@@ -54,7 +66,7 @@ func InterfaceOf(value interface{}) reflect.Type {
 
 	return t
 }
-
+// New returns a new Injector.
 func New() Injector {
 	return &injector{
 		values: make(map[reflect.Type]reflect.Value),
