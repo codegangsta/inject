@@ -7,7 +7,7 @@ import (
 )
 
 // Injector represents an interface for mapping and injecting dependencies into structs
-// function arguments.
+// and function arguments.
 type Injector interface {
 	Applicator
 	Invoker
@@ -54,6 +54,7 @@ type injector struct {
 }
 
 // InterfaceOf dereferences a pointer to an Interface type.
+// It panics if value is not an pointer to an interface.
 func InterfaceOf(value interface{}) reflect.Type {
 	t := reflect.TypeOf(value)
 
@@ -67,6 +68,7 @@ func InterfaceOf(value interface{}) reflect.Type {
 
 	return t
 }
+
 // New returns a new Injector.
 func New() Injector {
 	return &injector{
@@ -74,10 +76,15 @@ func New() Injector {
 	}
 }
 
+// Invoke attempts to call the interface{} provided as a function,
+// providing dependencies for function arguments based on Type.
+// Returns a slice of reflect.Value representing the returned values of the function.
+// Returns an error if the injection fails.
+// It panics if f is not a function
 func (inj *injector) Invoke(f interface{}) ([]reflect.Value, error) {
 	t := reflect.TypeOf(f)
 
-	var in = make([]reflect.Value, t.NumIn())
+	var in = make([]reflect.Value, t.NumIn()) //Panic if t is not kind of Func
 	for i := 0; i < t.NumIn(); i++ {
 		argType := t.In(i)
 		val := inj.Get(argType)
@@ -91,6 +98,9 @@ func (inj *injector) Invoke(f interface{}) ([]reflect.Value, error) {
 	return reflect.ValueOf(f).Call(in), nil
 }
 
+// Maps dependencies in the Type map to each field in the struct
+// that is tagged with 'inject'.
+// Returns an error if the injection fails.
 func (inj *injector) Apply(val interface{}) error {
 	v := reflect.ValueOf(val)
 
@@ -99,7 +109,7 @@ func (inj *injector) Apply(val interface{}) error {
 	}
 
 	if v.Kind() != reflect.Struct {
-		return nil
+		return nil // Should not panic here ?
 	}
 
 	t := v.Type()
@@ -122,6 +132,8 @@ func (inj *injector) Apply(val interface{}) error {
 	return nil
 }
 
+// Maps the concrete value of val to its dynamic type using reflect.TypeOf,
+// It returns the TypeMapper registered in.
 func (i *injector) Map(val interface{}) TypeMapper {
 	i.values[reflect.TypeOf(val)] = reflect.ValueOf(val)
 	return i
