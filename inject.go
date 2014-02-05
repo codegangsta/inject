@@ -13,7 +13,7 @@ type Injector interface {
 	Invoker
 	TypeMapper
 	// SetParent sets the parent of the injector. If the injector cannot find a
-	// dependency in its Type map it will check it's parent before returning an
+	// dependency in its Type map it will check its parent before returning an
 	// error.
 	SetParent(Injector)
 }
