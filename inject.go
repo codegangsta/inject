@@ -49,12 +49,13 @@ type TypeMapper interface {
 	Set(reflect.Type, reflect.Value) TypeMapper
 	// Returns the Value that is mapped to the current type. Returns a zeroed Value if
 	// the Type has not been mapped.
-	Get(reflect.Type) reflect.Value
+	Get(reflect.Type, ...bool) reflect.Value
 }
 
 type injector struct {
-	values map[reflect.Type]reflect.Value
-	parent Injector
+	factories map[reflect.Type]reflect.Value
+	values    map[reflect.Type]reflect.Value
+	parent    Injector
 }
 
 // InterfaceOf dereferences a pointer to an Interface type.
@@ -76,7 +77,8 @@ func InterfaceOf(value interface{}) reflect.Type {
 // New returns a new Injector.
 func New() Injector {
 	return &injector{
-		values: make(map[reflect.Type]reflect.Value),
+		values:    make(map[reflect.Type]reflect.Value),
+		factories: make(map[reflect.Type]reflect.Value),
 	}
 }
 
@@ -85,27 +87,31 @@ func New() Injector {
 // Returns a slice of reflect.Value representing the returned values of the function.
 // Returns an error if the injection fails.
 // It panics if f is not a function
-func (inj *injector) Invoke(f interface{}) ([]reflect.Value, error) {
-	t := reflect.TypeOf(f)
+func (inj *injector) Invoke(f interface{}) (ret []reflect.Value, err error) {
+	defer recoverResolvePanic(&err)
 
-	var in = make([]reflect.Value, t.NumIn()) //Panic if t is not kind of Func
-	for i := 0; i < t.NumIn(); i++ {
+	t := reflect.TypeOf(f)
+	var args = make([]reflect.Value, t.NumIn()) //Panic if t is not kind of Func
+	for i, arg := range args {
 		argType := t.In(i)
-		val := inj.Get(argType)
-		if !val.IsValid() {
+		arg = inj.Get(argType)
+		if !arg.IsValid() {
 			return nil, fmt.Errorf("Value not found for type %v", argType)
 		}
 
-		in[i] = val
+		args[i] = arg
 	}
 
-	return reflect.ValueOf(f).Call(in), nil
+	ret = reflect.ValueOf(f).Call(args)
+	return
 }
 
 // Maps dependencies in the Type map to each field in the struct
 // that is tagged with 'inject'.
 // Returns an error if the injection fails.
-func (inj *injector) Apply(val interface{}) error {
+func (inj *injector) Apply(val interface{}) (err error) {
+	defer recoverResolvePanic(&err)
+
 	v := reflect.ValueOf(val)
 
 	for v.Kind() == reflect.Ptr {
@@ -133,19 +139,17 @@ func (inj *injector) Apply(val interface{}) error {
 
 	}
 
-	return nil
+	return
 }
 
 // Maps the concrete value of val to its dynamic type using reflect.TypeOf,
 // It returns the TypeMapper registered in.
 func (i *injector) Map(val interface{}) TypeMapper {
-	i.values[reflect.TypeOf(val)] = reflect.ValueOf(val)
-	return i
+	return i.mapping(reflect.TypeOf(val), reflect.ValueOf(val))
 }
 
 func (i *injector) MapTo(val interface{}, ifacePtr interface{}) TypeMapper {
-	i.values[InterfaceOf(ifacePtr)] = reflect.ValueOf(val)
-	return i
+	return i.mapping(InterfaceOf(ifacePtr), reflect.ValueOf(val))
 }
 
 // Maps the given reflect.Type to the given reflect.Value and returns
@@ -155,14 +159,72 @@ func (i *injector) Set(typ reflect.Type, val reflect.Value) TypeMapper {
 	return i
 }
 
-func (i *injector) Get(t reflect.Type) reflect.Value {
-	val := i.values[t]
-	if !val.IsValid() && i.parent != nil {
-		val = i.parent.Get(t)
+func (inj *injector) mapping(typ reflect.Type, val reflect.Value) TypeMapper {
+	kind := val.Kind()
+	if kind == reflect.Func {
+		if typ.Kind() == reflect.Func {
+			typ = val.Type().Out(0)
+		}
+		inj.factories[typ] = val
+	} else {
+		inj.values[typ] = val
 	}
-	return val
+	return inj
 }
 
-func (i *injector) SetParent(parent Injector) {
-	i.parent = parent
+func (inj *injector) Get(want reflect.Type, root ...bool) (ret reflect.Value) {
+	ret = inj.values[want]
+
+	if !ret.IsValid() {
+		ret = inj.factories[want]
+	}
+
+	if !ret.IsValid() && inj.parent != nil {
+		ret = inj.parent.Get(want, false)
+	}
+
+	if ret.IsValid() && ret.Kind() == reflect.Func && (len(root) == 0 || root[0]) {
+		ret = inj.resolve(ret, []reflect.Type{})
+	}
+
+	return
+}
+
+func (inj *injector) resolve(fac reflect.Value, chain []reflect.Type) reflect.Value {
+	chainLen := len(chain)
+	if chainLen > 1 {
+		want := chain[chainLen-1]
+		for _, t := range chain[:chainLen-1] {
+			if want == t {
+				panic(resolveError{chain: chain, message: "dependency loop"})
+			}
+		}
+	}
+
+	facType := fac.Type()
+	args := make([]reflect.Value, facType.NumIn())
+	for i, _ := range args {
+		argType := facType.In(i)
+
+		if cachedVal, ok := inj.values[argType]; ok {
+			args[i] = cachedVal
+			continue
+		}
+
+		args[i] = inj.Get(argType, false)
+		if !args[i].IsValid() {
+			panic(resolveError{chain: chain, fac: fac})
+		}
+
+		if args[i].Kind() == reflect.Func {
+			args[i] = inj.resolve(args[i], append(chain, facType, argType))
+		}
+		inj.values[argType] = args[i]
+	}
+
+	return fac.Call(args)[0]
+}
+
+func (inj *injector) SetParent(parent Injector) {
+	inj.parent = parent
 }
