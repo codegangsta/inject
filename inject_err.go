@@ -33,7 +33,7 @@ func recoverResolvePanic(err *error) {
 			}
 
 			*err = fmt.Errorf("Value not found for type %v (%v): %v",
-				chain[len(chain) - 1], x.message, strings.Join(chain, " -> "))
+				chain[len(chain)-1], x.message, strings.Join(chain, " -> "))
 			println(fmt.Sprintf("%v", *err))
 		default:
 			*err = fmt.Errorf("%v", x)

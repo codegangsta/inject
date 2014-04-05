@@ -54,8 +54,8 @@ type TypeMapper interface {
 
 type injector struct {
 	factories map[reflect.Type]reflect.Value
-	values map[reflect.Type]reflect.Value
-	parent Injector
+	values    map[reflect.Type]reflect.Value
+	parent    Injector
 }
 
 // InterfaceOf dereferences a pointer to an Interface type.
@@ -77,7 +77,7 @@ func InterfaceOf(value interface{}) reflect.Type {
 // New returns a new Injector.
 func New() Injector {
 	return &injector{
-		values: make(map[reflect.Type]reflect.Value),
+		values:    make(map[reflect.Type]reflect.Value),
 		factories: make(map[reflect.Type]reflect.Value),
 	}
 }
@@ -193,8 +193,8 @@ func (inj *injector) Get(want reflect.Type, root ...bool) (ret reflect.Value) {
 func (inj *injector) resolve(fac reflect.Value, chain []reflect.Type) reflect.Value {
 	chainLen := len(chain)
 	if chainLen > 1 {
-		want := chain[chainLen - 1]
-		for _, t := range chain[:chainLen - 1] {
+		want := chain[chainLen-1]
+		for _, t := range chain[:chainLen-1] {
 			if want == t {
 				panic(resolveError{chain: chain, message: "dependency loop"})
 			}
