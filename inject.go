@@ -121,7 +121,7 @@ func (inj *injector) Apply(val interface{}) error {
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Field(i)
 		structField := t.Field(i)
-		if f.CanSet() && structField.Tag == "inject" {
+		if f.CanSet() && (structField.Tag == "inject" || structField.Tag.Get("inject") != "") {
 			ft := f.Type()
 			v := inj.Get(ft)
 			if !v.IsValid() {
