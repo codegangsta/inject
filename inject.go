@@ -162,7 +162,7 @@ func (i *injector) Get(t reflect.Type) reflect.Value {
 		}
 	}
 
-  // Still no type found, try to look it up on the parent
+	// Still no type found, try to look it up on the parent
 	if !val.IsValid() && i.parent != nil {
 		val = i.parent.Get(t)
 	}
