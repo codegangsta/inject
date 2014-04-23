@@ -10,7 +10,7 @@ type SpecialString interface {
 }
 
 type TestStruct struct {
-	Dep1 string        `inject`
+	Dep1 string        `inject:"t" json:"-"`
 	Dep2 SpecialString `inject`
 	Dep3 string
 }
