@@ -51,7 +51,7 @@ func Test_InjectorInvoke(t *testing.T) {
 	typSend := reflect.ChanOf(reflect.SendDir, reflect.TypeOf(dep4).Elem())
 	injector.Set(typRecv, reflect.ValueOf(dep3))
 	injector.Set(typSend, reflect.ValueOf(dep4))
-	
+
 	_, err := injector.Invoke(func(d1 string, d2 SpecialString, d3 <-chan *SpecialString, d4 chan<- *SpecialString) {
 		expect(t, d1, dep)
 		expect(t, d2, dep2)
@@ -94,6 +94,7 @@ func Test_InjectorApply(t *testing.T) {
 
 	expect(t, s.Dep1, "a dep")
 	expect(t, s.Dep2, "another dep")
+	expect(t, s.Dep3, "")
 }
 
 func Test_InterfaceOf(t *testing.T) {
@@ -113,15 +114,15 @@ func Test_InterfaceOf(t *testing.T) {
 
 func Test_InjectorSet(t *testing.T) {
 	injector := inject.New()
-	typ      := reflect.TypeOf("string")
-	typSend  := reflect.ChanOf(reflect.SendDir, typ)
-	typRecv  := reflect.ChanOf(reflect.RecvDir, typ)
-	
+	typ := reflect.TypeOf("string")
+	typSend := reflect.ChanOf(reflect.SendDir, typ)
+	typRecv := reflect.ChanOf(reflect.RecvDir, typ)
+
 	// instantiating unidirectional channels is not possible using reflect
 	// http://golang.org/src/pkg/reflect/value.go?s=60463:60504#L2064
 	chanRecv := reflect.MakeChan(reflect.ChanOf(reflect.BothDir, typ), 0)
 	chanSend := reflect.MakeChan(reflect.ChanOf(reflect.BothDir, typ), 0)
-	
+
 	injector.Set(typSend, chanSend)
 	injector.Set(typRecv, chanRecv)
 
@@ -129,7 +130,6 @@ func Test_InjectorSet(t *testing.T) {
 	expect(t, injector.Get(typRecv).IsValid(), true)
 	expect(t, injector.Get(chanSend.Type()).IsValid(), false)
 }
-
 
 func Test_InjectorGet(t *testing.T) {
 	injector := inject.New()
