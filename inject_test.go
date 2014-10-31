@@ -2,9 +2,10 @@ package inject_test
 
 import (
 	"fmt"
-	"github.com/codegangsta/inject"
 	"reflect"
 	"testing"
+
+	"github.com/acasajus/inject"
 )
 
 type SpecialString interface {
@@ -62,6 +63,40 @@ func Test_InjectorInvoke(t *testing.T) {
 	})
 
 	expect(t, err, nil)
+}
+
+func Test_InjectorInvokeWithArguments(t *testing.T) {
+	injector := inject.New()
+	expect(t, injector == nil, false)
+
+	dep := "some dependency"
+	injector.Map(dep)
+	dep2 := 3
+	injector.Map(dep2)
+	arg1 := make(chan *SpecialString)
+	arg2 := &Greeter{"Me"}
+
+	_, err := injector.InvokeWithArgs(func(d1 string, d2 int, a1 chan *SpecialString, a2 *Greeter) {
+		expect(t, d1, dep)
+		expect(t, d2, dep2)
+		expect(t, reflect.TypeOf(a1).Elem(), reflect.TypeOf(arg1).Elem())
+		expect(t, reflect.TypeOf(a1).ChanDir(), reflect.BothDir)
+		expect(t, a2, arg2)
+	}, arg1, arg2)
+
+	expect(t, err, nil)
+
+	_, err = injector.InvokeWithArgs(func(d1 string, d2 int, a1 chan *SpecialString, a2 *Greeter) {
+		expect(t, d1, dep)
+		expect(t, d2, dep2)
+		expect(t, reflect.TypeOf(a1).Elem(), reflect.TypeOf(arg1).Elem())
+		expect(t, reflect.TypeOf(a1).ChanDir(), reflect.BothDir)
+		expect(t, a2, arg2)
+	}, arg1)
+
+	if err == nil || err.Error() != "Value not found for type *inject_test.Greeter" {
+		t.Error("Did not properly fail to invoke method")
+	}
 }
 
 func Test_InjectorInvokeReturnValues(t *testing.T) {

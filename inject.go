@@ -2,6 +2,7 @@
 package inject
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 )
@@ -33,6 +34,14 @@ type Invoker interface {
 	// a slice of reflect.Value representing the returned values of the function.
 	// Returns an error if the injection fails.
 	Invoke(interface{}) ([]reflect.Value, error)
+	// Invoke attempts to call the interface{} provided as a function,
+	// providing dependencies for function arguments based on Type.
+	// The passed arguments are required to be injected in the invocation, if
+	// Not all the arguments can be injected an error will be raised
+	// Returns a slice of reflect.Value representing the returned values of the function.
+	// Returns an error if the injection fails.
+	// It panics if f is not a function
+	InvokeWithArgs(interface{}, ...interface{}) ([]reflect.Value, error)
 }
 
 // TypeMapper represents an interface for mapping interface{} values based on type.
@@ -52,8 +61,30 @@ type TypeMapper interface {
 	Get(reflect.Type) reflect.Value
 }
 
+type valueMap map[reflect.Type]reflect.Value
+
+func (m valueMap) Get(t reflect.Type) reflect.Value {
+	val := m[t]
+
+	if val.IsValid() {
+		return val
+	}
+
+	// no concrete types found, try to find implementors
+	// if t is an interface
+	if t.Kind() == reflect.Interface {
+		for k, v := range m {
+			if k.Implements(t) {
+				val = v
+				break
+			}
+		}
+	}
+	return val
+}
+
 type injector struct {
-	values map[reflect.Type]reflect.Value
+	values valueMap
 	parent Injector
 }
 
@@ -97,6 +128,43 @@ func (inj *injector) Invoke(f interface{}) ([]reflect.Value, error) {
 		}
 
 		in[i] = val
+	}
+
+	return reflect.ValueOf(f).Call(in), nil
+}
+
+// Invoke attempts to call the interface{} provided as a function,
+// providing dependencies for function arguments based on Type.
+// The passed arguments are required to be injected in the invocation, if
+// Not all the arguments can be injected an error will be raised
+// Returns a slice of reflect.Value representing the returned values of the function.
+// Returns an error if the injection fails.
+// It panics if f is not a function
+func (inj *injector) InvokeWithArgs(f interface{}, args ...interface{}) ([]reflect.Value, error) {
+	t := reflect.TypeOf(f)
+
+	argsMap := valueMap(make(map[reflect.Type]reflect.Value))
+	for _, a := range args {
+		argsMap[reflect.TypeOf(a)] = reflect.ValueOf(a)
+	}
+
+	var in = make([]reflect.Value, t.NumIn()) //Panic if t is not kind of Func
+	for i := 0; i < t.NumIn(); i++ {
+		argType := t.In(i)
+		val := inj.Get(argType)
+		if !val.IsValid() {
+			val = argsMap.Get(argType)
+			if !val.IsValid() {
+				return nil, fmt.Errorf("Value not found for type %v", argType)
+			}
+			delete(argsMap, argType)
+		}
+
+		in[i] = val
+	}
+
+	if len(argsMap) > 0 {
+		return nil, errors.New("Not all arguments could be injected")
 	}
 
 	return reflect.ValueOf(f).Call(in), nil
@@ -156,22 +224,7 @@ func (i *injector) Set(typ reflect.Type, val reflect.Value) TypeMapper {
 }
 
 func (i *injector) Get(t reflect.Type) reflect.Value {
-	val := i.values[t]
-
-	if val.IsValid() {
-		return val
-	}
-
-	// no concrete types found, try to find implementors
-	// if t is an interface
-	if t.Kind() == reflect.Interface {
-		for k, v := range i.values {
-			if k.Implements(t) {
-				val = v
-				break
-			}
-		}
-	}
+	val := i.values.Get(t)
 
 	// Still no type found, try to look it up on the parent
 	if !val.IsValid() && i.parent != nil {
