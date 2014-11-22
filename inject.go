@@ -43,6 +43,9 @@ type TypeMapper interface {
 	// This is really only useful for mapping a value as an interface, as interfaces
 	// cannot at this time be referenced directly without a pointer.
 	MapTo(interface{}, interface{}) TypeMapper
+	// Maps the outputs types of the function to the handler.
+	// The handler is run whenever the type is requested.
+	MapHandler(interface{}) TypeMapper
 	// Provides a possibility to directly insert a mapping based on type and value.
 	// This makes it possible to directly map type arguments not possible to instantiate
 	// with reflect like unidirectional channels.
@@ -148,6 +151,19 @@ func (i *injector) MapTo(val interface{}, ifacePtr interface{}) TypeMapper {
 	return i
 }
 
+// Maps all of val's output types to the function val, which
+// is executed whenever the type is requested.
+func (i *injector) MapHandler(val interface{}) TypeMapper {
+	t := reflect.TypeOf(val)
+	v := reflect.ValueOf(val)
+
+	for idx := 0; idx < t.NumOut(); idx++ {
+		i.values[t.Out(idx)] = v
+	}
+
+	return i
+}
+
 // Maps the given reflect.Type to the given reflect.Value and returns
 // the Typemapper the mapping has been registered in.
 func (i *injector) Set(typ reflect.Type, val reflect.Value) TypeMapper {
@@ -159,16 +175,39 @@ func (i *injector) Get(t reflect.Type) reflect.Value {
 	val := i.values[t]
 
 	if val.IsValid() {
-		return val
+		if val.Kind() != reflect.Func || val.Type() == t {
+			return val
+		}
+
+		if results, err := i.Invoke(val.Interface()); err == nil {
+			for _, r := range results {
+				if r.Type() == t {
+					return r
+				}
+			}
+		}
 	}
 
 	// no concrete types found, try to find implementors
 	// if t is an interface
 	if t.Kind() == reflect.Interface {
 		for k, v := range i.values {
-			if k.Implements(t) {
+			if !k.Implements(t) {
+				continue
+			}
+
+			if v.Kind() != reflect.Func {
 				val = v
 				break
+			}
+
+			if results, err := i.Invoke(v.Interface()); err == nil {
+				for _, r := range results {
+					if r.Type().Implements(t) {
+						val = r
+						break
+					}
+				}
 			}
 		}
 	}
