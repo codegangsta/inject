@@ -11,8 +11,7 @@ inject包提供了多种基于实体的依赖映射和反射方式。
 ```go
 func InterfaceOf(value interface{}) reflect.Type
 ```
-InterfaceOf dereferences a pointer to an Interface type. It panics if value is
-not an pointer to an interface.
+函数InterfaceOf返回指向接口类型的指针。如果传入的value值不是指向接口的指针，将抛出一个panic异常。
 
 #### type Applicator
 
