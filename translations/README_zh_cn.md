@@ -2,7 +2,7 @@
 --
     import "github.com/codegangsta/inject"
 
-inject包提供了多种基于实体的依赖映射和反射方式。
+inject包提供了多种基于实体的映射和依赖注入方式。
 
 ## 用法
 
@@ -17,14 +17,13 @@ func InterfaceOf(value interface{}) reflect.Type
 
 ```go
 type Applicator interface {
-    // Maps dependencies in the Type map to each field in the struct
-    // that is tagged with 'inject'. Returns an error if the injection
-    // fails.
+    // 在Type map中维持对结构体中每个域的引用并用'inject'来标记
+    // 如果注入失败将会返回一个error.
     Apply(interface{}) error
 }
 ```
 
-Applicator represents an interface for mapping dependencies to a struct.
+Applicator接口表示到结构体的依赖映射。
 
 #### type Injector
 
@@ -33,55 +32,49 @@ type Injector interface {
     Applicator
     Invoker
     TypeMapper
-    // SetParent sets the parent of the injector. If the injector cannot find a
-    // dependency in its Type map it will check its parent before returning an
-    // error.
+    // SetParent用来设置父injector. 如果在当前injector的Type map中找不到依赖，
+    // 将会继续从它的父injector中找，直到返回error.
     SetParent(Injector)
 }
 ```
 
-Injector represents an interface for mapping and injecting dependencies into
-structs and function arguments.
+Injector接口表示对结构体和函数参数的映射和依赖注入。
 
 #### func  New
 
 ```go
 func New() Injector
 ```
-New returns a new Injector.
+New创建并返回一个Injector.
 
 #### type Invoker
 
 ```go
 type Invoker interface {
-    // Invoke attempts to call the interface{} provided as a function,
-    // providing dependencies for function arguments based on Type. Returns
-    // a slice of reflect.Value representing the returned values of the function.
-    // Returns an error if the injection fails.
+    // Invoke尝试将interface{}作为一个函数来调用，并基于Type为函数提供参数。
+    // 它将返回reflect.Value的切片，其中存放原函数的返回值。
+    // 如果注入失败则返回error.
     Invoke(interface{}) ([]reflect.Value, error)
 }
 ```
 
-Invoker represents an interface for calling functions via reflection.
+Invoker接口表示通过反射进行函数调用。
 
 #### type TypeMapper
 
 ```go
 type TypeMapper interface {
-    // Maps the interface{} value based on its immediate type from reflect.TypeOf.
+    // 基于调用reflect.TypeOf得到的类型映射interface{}的值。
     Map(interface{}) TypeMapper
-    // Maps the interface{} value based on the pointer of an Interface provided.
-    // This is really only useful for mapping a value as an interface, as interfaces
-    // cannot at this time be referenced directly without a pointer.
+    // 基于提供的接口的指针映射interface{}的值。
+    // 该函数仅用来将一个值映射为接口，因为接口无法不通过指针而直接引用到。
     MapTo(interface{}, interface{}) TypeMapper
-    // Provides a possibility to directly insert a mapping based on type and value.
-    // This makes it possible to directly map type arguments not possible to instantiate
-    // with reflect like unidirectional channels.
+    // 为直接插入基于类型和值的map提供一种可能性。
+    // 它使得这一类直接映射成为可能：无法通过反射直接实例化的类型参数，如单向管道。
     Set(reflect.Type, reflect.Value) TypeMapper
-    // Returns the Value that is mapped to the current type. Returns a zeroed Value if
-    // the Type has not been mapped.
+    // 返回映射到当前类型的Value. 如果Type没被映射，将返回对应的零值。
     Get(reflect.Type) reflect.Value
 }
 ```
 
-TypeMapper represents an interface for mapping interface{} values based on type.
+TypeMapper接口用来表示基于类型到接口值的映射。
