@@ -2,7 +2,7 @@
 --
     import "github.com/codegangsta/inject"
 
-inject包提供了多种基于实体的映射和依赖注入方式。
+inject包提供了多种对实体的映射和依赖注入方式。
 
 ## 用法
 
@@ -23,7 +23,7 @@ type Applicator interface {
 }
 ```
 
-Applicator接口表示到结构体的依赖映射。
+Applicator接口表示到结构体的依赖映射关系。
 
 #### type Injector
 
@@ -38,7 +38,7 @@ type Injector interface {
 }
 ```
 
-Injector接口表示对结构体和函数参数的映射和依赖注入。
+Injector接口表示对结构体、函数参数的映射和依赖注入。
 
 #### func  New
 
@@ -78,3 +78,8 @@ type TypeMapper interface {
 ```
 
 TypeMapper接口用来表示基于类型到接口值的映射。
+
+
+## 译者
+
+张强 (qqbunny@yeah.net)
