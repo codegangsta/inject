@@ -157,3 +157,56 @@ func TestInjectImplementors(t *testing.T) {
 
 	expect(t, injector.Get(inject.InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
 }
+
+func Test_InjectorMapHandler(t *testing.T) {
+	injector := inject.New()
+
+	timesRun := 0 // Count number of times the handler was run
+
+	handler := func() (string, int) {
+		timesRun++
+		return "some dependency", 11
+	}
+
+	injector.MapHandler(handler)
+
+	expect(t, injector.Get(reflect.TypeOf("string")).IsValid(), true)
+	expect(t, injector.Get(reflect.TypeOf(11)).IsValid(), true)
+	expect(t, injector.Get(reflect.TypeOf(handler)).IsValid(), false) // Handler itself should NOT be mapped
+	expect(t, timesRun, 2)
+}
+
+func Test_InjectorInvokeWithMapHandler(t *testing.T) {
+	injector := inject.New()
+
+	handler := func() (string, int) {
+		return "some dependency", 11
+	}
+
+	injector.MapHandler(handler)
+
+	var (
+		s string
+		i int
+	)
+
+	injector.Invoke(func(j string, k int) {
+		s = j
+		i = k
+	})
+
+	expect(t, s, "some dependency")
+	expect(t, i, 11)
+}
+
+func Test_InjectorCanAcceptFuncs(t *testing.T) {
+	injector := inject.New()
+
+	handler := func() (string, int) {
+		return "some dependency", 11
+	}
+
+	injector.Map(handler)
+
+	expect(t, injector.Get(reflect.TypeOf(handler)).IsValid(), true)
+}
