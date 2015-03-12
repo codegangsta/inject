@@ -144,7 +144,9 @@ func (i *injector) Map(val interface{}) TypeMapper {
 }
 
 func (i *injector) MapTo(val interface{}, ifacePtr interface{}) TypeMapper {
-	i.values[InterfaceOf(ifacePtr)] = reflect.ValueOf(val)
+	if !reflect.ValueOf(val).IsNil() {
+		i.values[InterfaceOf(ifacePtr)] = reflect.ValueOf(val)
+	}
 	return i
 }
 
