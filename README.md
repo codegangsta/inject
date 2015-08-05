@@ -6,6 +6,7 @@ Package inject provides utilities for mapping and injecting dependencies in
 various ways.
 
 Language Translations:
+* [繁體中文](translations/README_zh_tw.md)
 * [简体中文](translations/README_zh_cn.md)
 
 ## Usage
