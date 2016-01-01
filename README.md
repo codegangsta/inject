@@ -79,6 +79,8 @@ type TypeMapper interface {
 	// This is really only useful for mapping a value as an interface, as interfaces
 	// cannot at this time be referenced directly without a pointer.
 	MapTo(interface{}, interface{}) TypeMapper
+	// Provide the dynamic type of interface{} returns,
+	Provide(interface{}) TypeMapper
 	// Provides a possibility to directly insert a mapping based on type and value.
 	// This makes it possible to directly map type arguments not possible to instantiate
 	// with reflect like unidirectional channels.

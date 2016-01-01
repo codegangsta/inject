@@ -43,6 +43,8 @@ type TypeMapper interface {
 	// This is really only useful for mapping a value as an interface, as interfaces
 	// cannot at this time be referenced directly without a pointer.
 	MapTo(interface{}, interface{}) TypeMapper
+	// Provide the dynamic type of interface{} returns,
+	Provide(interface{}) TypeMapper
 	// Provides a possibility to directly insert a mapping based on type and value.
 	// This makes it possible to directly map type arguments not possible to instantiate
 	// with reflect like unidirectional channels.
@@ -53,8 +55,9 @@ type TypeMapper interface {
 }
 
 type injector struct {
-	values map[reflect.Type]reflect.Value
-	parent Injector
+	values    map[reflect.Type]reflect.Value
+	providers map[reflect.Type]reflect.Value
+	parent    Injector
 }
 
 // InterfaceOf dereferences a pointer to an Interface type.
@@ -76,7 +79,8 @@ func InterfaceOf(value interface{}) reflect.Type {
 // New returns a new Injector.
 func New() Injector {
 	return &injector{
-		values: make(map[reflect.Type]reflect.Value),
+		values:    make(map[reflect.Type]reflect.Value),
+		providers: make(map[reflect.Type]reflect.Value),
 	}
 }
 
@@ -148,8 +152,22 @@ func (i *injector) MapTo(val interface{}, ifacePtr interface{}) TypeMapper {
 	return i
 }
 
+// Provide the dynamic type of provider returns,
+// It returns the TypeMapper registered in.
+func (inj *injector) Provide(provider interface{}) TypeMapper {
+	val := reflect.ValueOf(provider)
+	t := val.Type()
+	numout := t.NumOut()
+	for i := 0; i < numout; i++ {
+		out := t.Out(i)
+		inj.providers[out] = val
+	}
+	return inj
+}
+
 // Maps the given reflect.Type to the given reflect.Value and returns
 // the Typemapper the mapping has been registered in.
+// It panics if invoke provider failed.
 func (i *injector) Set(typ reflect.Type, val reflect.Value) TypeMapper {
 	i.values[typ] = val
 	return i
@@ -162,19 +180,42 @@ func (i *injector) Get(t reflect.Type) reflect.Value {
 		return val
 	}
 
+	// try to find providers
+	if provider, ok := i.providers[t]; ok {
+		// invoke provider to inject return values
+		results, err := i.Invoke(provider.Interface())
+		if err != nil {
+			panic(err)
+		}
+		for _, result := range results {
+			resultType := result.Type()
+
+			i.values[resultType] = result
+
+			// provider should not be called again
+			delete(i.providers, resultType)
+
+			if resultType == t {
+				val = result
+			}
+		}
+		if val.IsValid() {
+			return val
+		}
+	}
+
 	// no concrete types found, try to find implementors
 	// if t is an interface
 	if t.Kind() == reflect.Interface {
 		for k, v := range i.values {
-			if k.Implements(t) {
-				val = v
-				break
+			if k.Implements(t) && v.IsValid() {
+				return v
 			}
 		}
 	}
 
 	// Still no type found, try to look it up on the parent
-	if !val.IsValid() && i.parent != nil {
+	if i.parent != nil {
 		val = i.parent.Get(t)
 	}
 
