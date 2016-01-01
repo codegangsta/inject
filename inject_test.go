@@ -2,9 +2,10 @@ package inject_test
 
 import (
 	"fmt"
-	"github.com/codegangsta/inject"
 	"reflect"
 	"testing"
+
+	"github.com/tsaikd/inject"
 )
 
 type SpecialString interface {
@@ -21,7 +22,7 @@ type Greeter struct {
 }
 
 func (g *Greeter) String() string {
-	return "Hello, My name is" + g.Name
+	return "Hello, My name is " + g.Name
 }
 
 /* Test Helpers */
@@ -156,4 +157,44 @@ func TestInjectImplementors(t *testing.T) {
 	injector.Map(g)
 
 	expect(t, injector.Get(inject.InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
+}
+
+func Test_InjectorProvideStruct(t *testing.T) {
+	injector := inject.New()
+
+	expect(t, injector.Get(reflect.TypeOf(&TestStruct{})).IsValid(), false)
+
+	injector.Provide(func() *TestStruct {
+		return &TestStruct{
+			Dep3: "test",
+		}
+	})
+
+	injectedStruct := injector.Get(reflect.TypeOf(&TestStruct{}))
+	expect(t, injectedStruct.IsValid(), true)
+	if injectedStruct.IsValid() {
+		expect(t, injectedStruct.Interface().(*TestStruct).Dep3, "test")
+	}
+
+	_, err := injector.Invoke(func(s1 *TestStruct) {
+		expect(t, s1.Dep3, "test")
+	})
+	expect(t, err, nil)
+}
+
+func Test_InjectorProvideInterface(t *testing.T) {
+	injector := inject.New()
+
+	expect(t, injector.Get(inject.InterfaceOf((*fmt.Stringer)(nil))).IsValid(), false)
+
+	injector.Provide(func() fmt.Stringer {
+		return &Greeter{"Jeremy"}
+	})
+
+	expect(t, injector.Get(inject.InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
+
+	_, err := injector.Invoke(func(stringer fmt.Stringer) {
+		expect(t, stringer.String(), "Hello, My name is Jeremy")
+	})
+	expect(t, err, nil)
 }
