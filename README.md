@@ -1,4 +1,4 @@
-# inject
+# inject [![codebeat badge](https://codebeat.co/badges/1e647dca-cc3d-4b84-b6b9-7d14fb21c8c8)](https://codebeat.co/projects/github-com-codegangsta-inject)
 --
     import "github.com/codegangsta/inject"
 
