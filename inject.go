@@ -16,6 +16,9 @@ type Injector interface {
 	// dependency in its Type map it will check its parent before returning an
 	// error.
 	SetParent(Injector)
+	// ApplyMap applies dependencies to the provided struct and registers it
+	// if it is successful.
+	ApplyMap(interface{}) (TypeMapper, error)
 }
 
 // Applicator represents an interface for mapping dependencies to a struct.
@@ -141,6 +144,15 @@ func (inj *injector) Apply(val interface{}) error {
 func (i *injector) Map(val interface{}) TypeMapper {
 	i.values[reflect.TypeOf(val)] = reflect.ValueOf(val)
 	return i
+}
+
+// Applies dependencies to the struct then Maps it if it is successful.
+func (i *injector) ApplyMap(val interface{}) (TypeMapper, error) {
+	err := i.Apply(val)
+	if err != nil {
+		return nil, err
+	}
+	return i.Map(val), nil
 }
 
 func (i *injector) MapTo(val interface{}, ifacePtr interface{}) TypeMapper {

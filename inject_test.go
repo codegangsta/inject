@@ -2,9 +2,10 @@ package inject_test
 
 import (
 	"fmt"
-	"github.com/codegangsta/inject"
 	"reflect"
 	"testing"
+
+	"github.com/codegangsta/inject"
 )
 
 type SpecialString interface {
@@ -95,6 +96,25 @@ func Test_InjectorApply(t *testing.T) {
 	expect(t, s.Dep1, "a dep")
 	expect(t, s.Dep2, "another dep")
 	expect(t, s.Dep3, "")
+}
+
+func Test_InjectorApplyMap(t *testing.T) {
+	injector := inject.New()
+
+	injector.Map("a dep").MapTo("another dep", (*SpecialString)(nil))
+
+	s := TestStruct{}
+	res, err := injector.ApplyMap(&s)
+	expect(t, err, nil)
+	expect(t, res, injector)
+
+	expect(t, s.Dep1, "a dep")
+	expect(t, s.Dep2, "another dep")
+	expect(t, s.Dep3, "")
+
+	st := reflect.TypeOf((*TestStruct)(nil))
+	injectRet := injector.Get(st).Interface().(*TestStruct)
+	expect(t, *injectRet, s)
 }
 
 func Test_InterfaceOf(t *testing.T) {

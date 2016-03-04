@@ -42,6 +42,9 @@ type Injector interface {
 	// dependency in its Type map it will check its parent before returning an
 	// error.
 	SetParent(Injector)
+	// ApplyMap applies dependencies to the provided struct and registers it
+	// if it is successful.
+	ApplyMap(interface{}) error
 }
 ```
 
