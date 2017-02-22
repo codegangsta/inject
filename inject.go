@@ -180,10 +180,8 @@ func (i *injector) Get(t reflect.Type) reflect.Value {
 			}
 		}
 	}
-	if len(impls) > 1 {
-		if i.options.PanicOnAmbiguity {
-			panic(fmt.Sprintf("Expect single matching implementation but found %v", len(impls)))
-		}
+	if len(impls) > 1 && i.options.PanicOnAmbiguity {
+		panic(fmt.Sprintf("Expect single matching implementation but found %v", len(impls)))
 	}
 	if len(impls) > 0 {
 		val = impls[0]

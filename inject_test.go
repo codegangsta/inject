@@ -11,7 +11,7 @@ type SpecialString interface {
 
 type TestStruct struct {
 	Dep1 string        `inject:"t" json:"-"`
-	Dep2 SpecialString `inject:"t"`
+	Dep2 SpecialString `inject`
 	Dep3 string
 }
 
@@ -185,5 +185,5 @@ func TestInjectImplementors_AmbiguousImplementationPanic(t *testing.T) {
 	})
 	g1, g2 := &Greeter{"Jeremy"}, &Greeter2{"Tom"}
 	injector.Map(g1).Map(g2)
-	expect(t, injector.Get(InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
+	injector.Get(InterfaceOf((*fmt.Stringer)(nil)))
 }
