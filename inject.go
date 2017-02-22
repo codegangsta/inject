@@ -56,6 +56,8 @@ type TypeMapper interface {
 
 // InjectorOptions contains options to configure the injector
 type InjectorOptions struct {
+	// If PanicOnAmbiguity is set to true, Get method will panic if it finds multiple
+	// implementations that satisfy the given type.
 	PanicOnAmbiguity bool
 }
 
