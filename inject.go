@@ -48,7 +48,8 @@ type TypeMapper interface {
 	// with reflect like unidirectional channels.
 	Set(reflect.Type, reflect.Value) TypeMapper
 	// Returns the Value that is mapped to the current type. Returns a zeroed Value if
-	// the Type has not been mapped.
+	// the Type has not been mapped. An error will be returned in addition if there're
+	// more than one implementation for the type.
 	Get(reflect.Type) (reflect.Value, error)
 }
 
@@ -144,26 +145,26 @@ func (inj *injector) Apply(val interface{}) error {
 
 // Maps the concrete value of val to its dynamic type using reflect.TypeOf,
 // It returns the TypeMapper registered in.
-func (inj *injector) Map(val interface{}) TypeMapper {
-	inj.values[reflect.TypeOf(val)] = reflect.ValueOf(val)
-	return inj
+func (i *injector) Map(val interface{}) TypeMapper {
+	i.values[reflect.TypeOf(val)] = reflect.ValueOf(val)
+	return i
 }
 
-func (inj *injector) MapTo(val interface{}, ifacePtr interface{}) TypeMapper {
-	inj.values[InterfaceOf(ifacePtr)] = reflect.ValueOf(val)
-	return inj
+func (i *injector) MapTo(val interface{}, ifacePtr interface{}) TypeMapper {
+	i.values[InterfaceOf(ifacePtr)] = reflect.ValueOf(val)
+	return i
 }
 
 // Maps the given reflect.Type to the given reflect.Value and returns
 // the Typemapper the mapping has been registered in.
-func (inj *injector) Set(typ reflect.Type, val reflect.Value) TypeMapper {
-	inj.values[typ] = val
-	return inj
+func (i *injector) Set(typ reflect.Type, val reflect.Value) TypeMapper {
+	i.values[typ] = val
+	return i
 }
 
-func (inj *injector) Get(t reflect.Type) (reflect.Value, error) {
+func (i *injector) Get(t reflect.Type) (reflect.Value, error) {
 	var err error
-	val := inj.values[t]
+	val := i.values[t]
 
 	if val.IsValid() {
 		return val, nil
@@ -173,7 +174,7 @@ func (inj *injector) Get(t reflect.Type) (reflect.Value, error) {
 	// if t is an interface
 	var impls []reflect.Value
 	if t.Kind() == reflect.Interface {
-		for k, v := range inj.values {
+		for k, v := range i.values {
 			if k.Implements(t) {
 				impls = append(impls, v)
 			}
@@ -186,8 +187,8 @@ func (inj *injector) Get(t reflect.Type) (reflect.Value, error) {
 	}
 
 	// Still no type found, try to look it up on the parent
-	if !val.IsValid() && inj.parent != nil {
-		val, err = inj.parent.Get(t)
+	if !val.IsValid() && i.parent != nil {
+		val, err = i.parent.Get(t)
 		if err != nil {
 			return val, err
 		}
