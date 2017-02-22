@@ -133,15 +133,9 @@ func Test_InjectorSet(t *testing.T) {
 	injector.Set(typSend, chanSend)
 	injector.Set(typRecv, chanRecv)
 
-	val, err := injector.Get(typSend)
-	expect(t, val.IsValid(), true)
-	expect(t, err, nil)
-	val, err = injector.Get(typRecv)
-	expect(t, val.IsValid(), true)
-	expect(t, err, nil)
-	val, err = injector.Get(chanSend.Type())
-	expect(t, val.IsValid(), false)
-	expect(t, err, nil)
+	expect(t, injector.Get(typSend).IsValid(), true)
+	expect(t, injector.Get(typRecv).IsValid(), true)
+	expect(t, injector.Get(chanSend.Type()).IsValid(), false)
 }
 
 func Test_InjectorGet(t *testing.T) {
@@ -149,11 +143,8 @@ func Test_InjectorGet(t *testing.T) {
 
 	injector.Map("some dependency")
 
-	val, err := injector.Get(reflect.TypeOf("string"))
-	expect(t, val.IsValid(), true)
-	val, err = injector.Get(reflect.TypeOf(11))
-	expect(t, val.IsValid(), false)
-	expect(t, err, nil)
+	expect(t, injector.Get(reflect.TypeOf("string")).IsValid(), true)
+	expect(t, injector.Get(reflect.TypeOf(11)).IsValid(), false)
 }
 
 func Test_InjectorSetParent(t *testing.T) {
@@ -163,9 +154,7 @@ func Test_InjectorSetParent(t *testing.T) {
 	injector2 := New()
 	injector2.SetParent(injector)
 
-	val, err := injector2.Get(InterfaceOf((*SpecialString)(nil)))
-	expect(t, val.IsValid(), true)
-	expect(t, err, nil)
+	expect(t, injector2.Get(InterfaceOf((*SpecialString)(nil))).IsValid(), true)
 }
 
 func TestInjectImplementors(t *testing.T) {
@@ -173,9 +162,7 @@ func TestInjectImplementors(t *testing.T) {
 	g := &Greeter{"Jeremy"}
 	injector.Map(g)
 
-	val, err := injector.Get(InterfaceOf((*fmt.Stringer)(nil)))
-	expect(t, val.IsValid(), true)
-	expect(t, err, nil)
+	expect(t, injector.Get(InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
 }
 
 func TestInjectImplementors_AmbiguousImplementation(t *testing.T) {
@@ -183,7 +170,20 @@ func TestInjectImplementors_AmbiguousImplementation(t *testing.T) {
 	g1, g2 := &Greeter{"Jeremy"}, &Greeter2{"Tom"}
 	injector.Map(g1).Map(g2)
 
-	val, err := injector.Get(InterfaceOf((*fmt.Stringer)(nil)))
-	expect(t, val.IsValid(), false)
-	refute(t, err, nil)
+	expect(t, injector.Get(InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
+}
+
+func TestInjectImplementors_AmbiguousImplementationPanic(t *testing.T) {
+	defer func() {
+		r := recover()
+		expect(t, r, "Expect single matching implementation but found 2")
+	}()
+
+	injector := New()
+	injector.SetOptions(InjectorOptions{
+		PanicOnAmbiguity: true,
+	})
+	g1, g2 := &Greeter{"Jeremy"}, &Greeter2{"Tom"}
+	injector.Map(g1).Map(g2)
+	expect(t, injector.Get(InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
 }

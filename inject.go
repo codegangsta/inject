@@ -16,6 +16,8 @@ type Injector interface {
 	// dependency in its Type map it will check its parent before returning an
 	// error.
 	SetParent(Injector)
+	// SetOptions sets options to configure the injector.
+	SetOptions(InjectorOptions)
 }
 
 // Applicator represents an interface for mapping dependencies to a struct.
@@ -48,14 +50,19 @@ type TypeMapper interface {
 	// with reflect like unidirectional channels.
 	Set(reflect.Type, reflect.Value) TypeMapper
 	// Returns the Value that is mapped to the current type. Returns a zeroed Value if
-	// the Type has not been mapped. An error will be returned in addition if there're
-	// more than one implementation for the type.
-	Get(reflect.Type) (reflect.Value, error)
+	// the Type has not been mapped.
+	Get(reflect.Type) reflect.Value
+}
+
+// InjectorOptions contains options to configure the injector
+type InjectorOptions struct {
+	PanicOnAmbiguity bool
 }
 
 type injector struct {
-	values map[reflect.Type]reflect.Value
-	parent Injector
+	options InjectorOptions
+	values  map[reflect.Type]reflect.Value
+	parent  Injector
 }
 
 // InterfaceOf dereferences a pointer to an Interface type.
@@ -92,10 +99,7 @@ func (inj *injector) Invoke(f interface{}) ([]reflect.Value, error) {
 	var in = make([]reflect.Value, t.NumIn()) //Panic if t is not kind of Func
 	for i := 0; i < t.NumIn(); i++ {
 		argType := t.In(i)
-		val, err := inj.Get(argType)
-		if err != nil {
-			return nil, err
-		}
+		val := inj.Get(argType)
 		if !val.IsValid() {
 			return nil, fmt.Errorf("Value not found for type %v", argType)
 		}
@@ -127,10 +131,7 @@ func (inj *injector) Apply(val interface{}) error {
 		structField := t.Field(i)
 		if f.CanSet() && (structField.Tag == "inject" || structField.Tag.Get("inject") != "") {
 			ft := f.Type()
-			v, err := inj.Get(ft)
-			if err != nil {
-				return err
-			}
+			v := inj.Get(ft)
 			if !v.IsValid() {
 				return fmt.Errorf("Value not found for type %v", ft)
 			}
@@ -162,12 +163,11 @@ func (i *injector) Set(typ reflect.Type, val reflect.Value) TypeMapper {
 	return i
 }
 
-func (i *injector) Get(t reflect.Type) (reflect.Value, error) {
-	var err error
+func (i *injector) Get(t reflect.Type) reflect.Value {
 	val := i.values[t]
 
 	if val.IsValid() {
-		return val, nil
+		return val
 	}
 
 	// no concrete types found, try to find implementors
@@ -181,22 +181,26 @@ func (i *injector) Get(t reflect.Type) (reflect.Value, error) {
 		}
 	}
 	if len(impls) > 1 {
-		return val, fmt.Errorf("Expect single matching implementation but found %v", len(impls))
-	} else if len(impls) == 1 {
+		if i.options.PanicOnAmbiguity {
+			panic(fmt.Sprintf("Expect single matching implementation but found %v", len(impls)))
+		}
+	}
+	if len(impls) > 0 {
 		val = impls[0]
 	}
 
 	// Still no type found, try to look it up on the parent
 	if !val.IsValid() && i.parent != nil {
-		val, err = i.parent.Get(t)
-		if err != nil {
-			return val, err
-		}
+		val = i.parent.Get(t)
 	}
 
-	return val, nil
+	return val
 }
 
-func (inj *injector) SetParent(parent Injector) {
-	inj.parent = parent
+func (i *injector) SetParent(parent Injector) {
+	i.parent = parent
+}
+
+func (inj *injector) SetOptions(options InjectorOptions) {
+	inj.options = options
 }
