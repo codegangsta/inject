@@ -183,7 +183,7 @@ func (i *injector) Get(t reflect.Type) reflect.Value {
 		}
 	}
 	if len(impls) > 1 && i.options.PanicOnAmbiguity {
-		panic(fmt.Sprintf("Expect single matching implementation but found %v", len(impls)))
+		panic(fmt.Sprintf("Expected single matching implementation for type <%v> but found %v: %v", t, len(impls), impls))
 	}
 	if len(impls) > 0 {
 		val = impls[0]
