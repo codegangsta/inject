@@ -112,6 +112,7 @@ func (inj *injector) Invoke(f interface{}) ([]reflect.Value, error) {
 // that is tagged with 'inject'.
 // Returns an error if the injection fails.
 func (inj *injector) Apply(val interface{}) error {
+	var err error
 	v := reflect.ValueOf(val)
 
 	for v.Kind() == reflect.Ptr {
@@ -132,12 +133,15 @@ func (inj *injector) Apply(val interface{}) error {
 			ft := f.Type()
 			v := inj.Get(id, ft)
 			if !v.IsValid() {
-				return fmt.Errorf("Value not found for type %v", ft)
+				err = fmt.Errorf("Value not found for type %v", ft)
+				continue
 			}
-
 			f.Set(v)
 		}
+	}
 
+	if err != nil {
+		return err
 	}
 
 	return nil
