@@ -1,8 +1,7 @@
-package inject_test
+package inject
 
 import (
 	"fmt"
-	"github.com/codegangsta/inject"
 	"reflect"
 	"testing"
 )
@@ -24,6 +23,14 @@ func (g *Greeter) String() string {
 	return "Hello, My name is" + g.Name
 }
 
+type Greeter2 struct {
+	Name string
+}
+
+func (g *Greeter2) String() string {
+	return "Hello, My name is" + g.Name
+}
+
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
 	if a != b {
@@ -38,7 +45,7 @@ func refute(t *testing.T, a interface{}, b interface{}) {
 }
 
 func Test_InjectorInvoke(t *testing.T) {
-	injector := inject.New()
+	injector := New()
 	expect(t, injector == nil, false)
 
 	dep := "some dependency"
@@ -65,7 +72,7 @@ func Test_InjectorInvoke(t *testing.T) {
 }
 
 func Test_InjectorInvokeReturnValues(t *testing.T) {
-	injector := inject.New()
+	injector := New()
 	expect(t, injector == nil, false)
 
 	dep := "some dependency"
@@ -84,7 +91,7 @@ func Test_InjectorInvokeReturnValues(t *testing.T) {
 }
 
 func Test_InjectorApply(t *testing.T) {
-	injector := inject.New()
+	injector := New()
 
 	injector.Map("a dep").MapTo("another dep", (*SpecialString)(nil))
 
@@ -98,10 +105,10 @@ func Test_InjectorApply(t *testing.T) {
 }
 
 func Test_InterfaceOf(t *testing.T) {
-	iType := inject.InterfaceOf((*SpecialString)(nil))
+	iType := InterfaceOf((*SpecialString)(nil))
 	expect(t, iType.Kind(), reflect.Interface)
 
-	iType = inject.InterfaceOf((**SpecialString)(nil))
+	iType = InterfaceOf((**SpecialString)(nil))
 	expect(t, iType.Kind(), reflect.Interface)
 
 	// Expecting nil
@@ -109,11 +116,11 @@ func Test_InterfaceOf(t *testing.T) {
 		rec := recover()
 		refute(t, rec, nil)
 	}()
-	iType = inject.InterfaceOf((*testing.T)(nil))
+	iType = InterfaceOf((*testing.T)(nil))
 }
 
 func Test_InjectorSet(t *testing.T) {
-	injector := inject.New()
+	injector := New()
 	typ := reflect.TypeOf("string")
 	typSend := reflect.ChanOf(reflect.SendDir, typ)
 	typRecv := reflect.ChanOf(reflect.RecvDir, typ)
@@ -132,7 +139,7 @@ func Test_InjectorSet(t *testing.T) {
 }
 
 func Test_InjectorGet(t *testing.T) {
-	injector := inject.New()
+	injector := New()
 
 	injector.Map("some dependency")
 
@@ -141,19 +148,42 @@ func Test_InjectorGet(t *testing.T) {
 }
 
 func Test_InjectorSetParent(t *testing.T) {
-	injector := inject.New()
+	injector := New()
 	injector.MapTo("another dep", (*SpecialString)(nil))
 
-	injector2 := inject.New()
+	injector2 := New()
 	injector2.SetParent(injector)
 
-	expect(t, injector2.Get(inject.InterfaceOf((*SpecialString)(nil))).IsValid(), true)
+	expect(t, injector2.Get(InterfaceOf((*SpecialString)(nil))).IsValid(), true)
 }
 
 func TestInjectImplementors(t *testing.T) {
-	injector := inject.New()
+	injector := New()
 	g := &Greeter{"Jeremy"}
 	injector.Map(g)
 
-	expect(t, injector.Get(inject.InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
+	expect(t, injector.Get(InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
+}
+
+func TestInjectImplementors_AmbiguousImplementation(t *testing.T) {
+	injector := New()
+	g1, g2 := &Greeter{"Jeremy"}, &Greeter2{"Tom"}
+	injector.Map(g1).Map(g2)
+
+	expect(t, injector.Get(InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
+}
+
+func TestInjectImplementors_AmbiguousImplementationPanic(t *testing.T) {
+	defer func() {
+		r := recover()
+		expect(t, r, "Expected single matching implementation for type <fmt.Stringer> but found 2: [<*inject.Greeter Value> <*inject.Greeter2 Value>]")
+	}()
+
+	injector := New()
+	injector.SetOptions(InjectorOptions{
+		PanicOnAmbiguity: true,
+	})
+	g1, g2 := &Greeter{"Jeremy"}, &Greeter2{"Tom"}
+	injector.Map(g1).Map(g2)
+	injector.Get(InterfaceOf((*fmt.Stringer)(nil)))
 }

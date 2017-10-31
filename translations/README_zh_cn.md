@@ -35,6 +35,8 @@ type Injector interface {
     // SetParent用来设置父injector. 如果在当前injector的Type map中找不到依赖，
     // 将会继续从它的父injector中找，直到返回error.
     SetParent(Injector)
+    // SetOptions提供一个接口用于设置injector.
+    SetOptions(InjectorOptions)
 }
 ```
 

@@ -16,6 +16,8 @@ type Injector interface {
 	// dependency in its Type map it will check its parent before returning an
 	// error.
 	SetParent(Injector)
+	// SetOptions sets options to configure the injector.
+	SetOptions(InjectorOptions)
 }
 
 // Applicator represents an interface for mapping dependencies to a struct.
@@ -52,9 +54,17 @@ type TypeMapper interface {
 	Get(reflect.Type) reflect.Value
 }
 
+// InjectorOptions contains options to configure the injector
+type InjectorOptions struct {
+	// If PanicOnAmbiguity is set to true, Get method will panic if it finds multiple
+	// implementations that satisfy the given type.
+	PanicOnAmbiguity bool
+}
+
 type injector struct {
-	values map[reflect.Type]reflect.Value
-	parent Injector
+	options InjectorOptions
+	values  map[reflect.Type]reflect.Value
+	parent  Injector
 }
 
 // InterfaceOf dereferences a pointer to an Interface type.
@@ -164,13 +174,19 @@ func (i *injector) Get(t reflect.Type) reflect.Value {
 
 	// no concrete types found, try to find implementors
 	// if t is an interface
+	var impls []reflect.Value
 	if t.Kind() == reflect.Interface {
 		for k, v := range i.values {
 			if k.Implements(t) {
-				val = v
-				break
+				impls = append(impls, v)
 			}
 		}
+	}
+	if len(impls) > 1 && i.options.PanicOnAmbiguity {
+		panic(fmt.Sprintf("Expected single matching implementation for type <%v> but found %v: %v", t, len(impls), impls))
+	}
+	if len(impls) > 0 {
+		val = impls[0]
 	}
 
 	// Still no type found, try to look it up on the parent
@@ -179,9 +195,12 @@ func (i *injector) Get(t reflect.Type) reflect.Value {
 	}
 
 	return val
-
 }
 
 func (i *injector) SetParent(parent Injector) {
 	i.parent = parent
+}
+
+func (inj *injector) SetOptions(options InjectorOptions) {
+	inj.options = options
 }

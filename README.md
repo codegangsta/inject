@@ -42,6 +42,8 @@ type Injector interface {
 	// dependency in its Type map it will check its parent before returning an
 	// error.
 	SetParent(Injector)
+	// SetOptions sets options to configure the injector.
+	SetOptions(InjectorOptions)
 }
 ```
 
