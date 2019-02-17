@@ -102,7 +102,7 @@ func (inj *injector) Invoke(f interface{}) ([]reflect.Value, error) {
 	return reflect.ValueOf(f).Call(in), nil
 }
 
-// Maps dependencies in the Type map to each field in the struct
+// Apply: Maps dependencies in the Type map to each field in the struct
 // that is tagged with 'inject'.
 // Returns an error if the injection fails.
 func (inj *injector) Apply(val interface{}) error {
@@ -136,7 +136,7 @@ func (inj *injector) Apply(val interface{}) error {
 	return nil
 }
 
-// Maps the concrete value of val to its dynamic type using reflect.TypeOf,
+// Map: Maps the concrete value of val to its dynamic type using reflect.TypeOf,
 // It returns the TypeMapper registered in.
 func (i *injector) Map(val interface{}) TypeMapper {
 	i.values[reflect.TypeOf(val)] = reflect.ValueOf(val)
@@ -148,7 +148,7 @@ func (i *injector) MapTo(val interface{}, ifacePtr interface{}) TypeMapper {
 	return i
 }
 
-// Maps the given reflect.Type to the given reflect.Value and returns
+// Set: Maps the given reflect.Type to the given reflect.Value and returns
 // the Typemapper the mapping has been registered in.
 func (i *injector) Set(typ reflect.Type, val reflect.Value) TypeMapper {
 	i.values[typ] = val
